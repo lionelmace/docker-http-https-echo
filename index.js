@@ -1,14 +1,15 @@
+var proxiedHttp = require( 'findhit-proxywrap' ).proxy( require( 'http' ) )
+var proxiedHttps = require( 'findhit-proxywrap' ).proxy( require( 'https' ) )
+
 var express = require('express')
 const morgan = require('morgan');
-var http = require('http')
-var https = require('https')
 var app = express()
 const os = require('os');
 const jwt = require('jsonwebtoken');
 var concat = require('concat-stream');
 
 app.set('json spaces', 2);
-app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal']);
+// app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal']);
 
 app.use(morgan('combined'));
 
@@ -60,8 +61,8 @@ const sslOpts = {
   cert: require('fs').readFileSync('fullchain.pem'),
 };
 
-var httpServer = http.createServer(app).listen(process.env.HTTP_PORT || 80);
-var httpsServer = https.createServer(sslOpts,app).listen(process.env.HTTPS_PORT || 443);
+var httpServer = proxiedHttp.createServer(app).listen(process.env.HTTP_PORT || 80);
+var httpsServer = proxiedHttps.createServer(sslOpts,app).listen(process.env.HTTPS_PORT || 443);
 
 let calledClose = false;
 
