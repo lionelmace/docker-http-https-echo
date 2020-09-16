@@ -12,11 +12,6 @@ In HTTP or HTTPS mode (aka SSL termination at ELB), the ELB inserts X-Forwarded-
 
 * VPC Gen 2 and IKS cluster with Kubernetes 1.18 and later
 
-
-## Resources
-
-* [VPC: Exposing apps with VPC load balancers](https://cloud.ibm.com/docs/containers?topic=containers-vpc-lbaas)
-
 ## Usage
 
 1. Build the docker image
@@ -81,6 +76,7 @@ In HTTP or HTTPS mode (aka SSL termination at ELB), the ELB inserts X-Forwarded-
         port: 80
         targetPort: 80
     ```
+    > The annotation **proxy-protocol** is used to preserve the source IP address of requests to apps in your cluster. This is documented [here](https://cloud.ibm.com/docs/containers?topic=containers-vpc-lbaas).
 
 1. Connect to your cluster
     ```
@@ -121,4 +117,6 @@ In HTTP or HTTPS mode (aka SSL termination at ELB), the ELB inserts X-Forwarded-
     ![browser](./screenshots/screenshot.png)
 
 
+## Resources
 
+* [VPC: Exposing apps with VPC load balancers](https://cloud.ibm.com/docs/containers?topic=containers-vpc-lbaas)
