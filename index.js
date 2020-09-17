@@ -61,8 +61,21 @@ const sslOpts = {
   cert: require('fs').readFileSync('fullchain.pem'),
 };
 
-var httpServer = proxiedHttp.createServer(app).listen(process.env.HTTP_PORT || 80);
-var httpsServer = proxiedHttps.createServer(sslOpts,app).listen(process.env.HTTPS_PORT || 443);
+var port  = process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 80,
+    sport = process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 443,
+    ip    = process.env.IP   || process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0';
+
+console.log('process.env.OPENSHIFT_NODEJS_IP=', process.env.OPENSHIFT_NODEJS_IP);
+console.log('Server will start on http://%s:%s', ip, port);
+var httpServer = proxiedHttp.createServer(app).listen( port, ip, function() {
+  console.log((new Date()) + ' Server is listening on port 80');
+});
+var httpsServer = proxiedHttps.createServer(sslOpts,app).listen( sport, ip, function() {
+  console.log((new Date()) + ' Server is listening on port 443');
+});
+
+// var httpServer = proxiedHttp.createServer(app).listen(process.env.HTTP_PORT || 80);
+// var httpsServer = proxiedHttps.createServer(sslOpts,app).listen(process.env.HTTPS_PORT || 443);
 
 let calledClose = false;
 
