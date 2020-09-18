@@ -11,6 +11,7 @@ In HTTP or HTTPS mode (aka SSL termination at ELB), the ELB inserts X-Forwarded-
 ## Pre-requisites
 
 * VPC Gen 2 and IKS cluster with Kubernetes 1.18 and later
+* VPC Gen 2 and OpenShift 4.5 cluster with Kubernetes 1.18 and later
 
 ## Usage
 
@@ -30,51 +31,55 @@ In HTTP or HTTPS mode (aka SSL termination at ELB), the ELB inserts X-Forwarded-
     apiVersion: v1
     kind: Namespace
     metadata:
-    name: echo
+      name: echo
 
     ---
     apiVersion: apps/v1
     kind: Deployment
     metadata:
-    name: echo-deployment
-    namespace: echo
-    labels:
+      name: echo-deployment
+      namespace: echo
+      labels:
         app: echo
     spec:
-    replicas: 1
-    selector:
+      replicas: 1
+      selector:
         matchLabels:
-        app: echo
-    template:
+          app: echo
+      template:
         metadata:
-        labels:
+          labels:
             app: echo
         spec:
-        containers:
-        - name: echo
-            image: <your-docker-repo>/http-https-echo
+          containers:
+          - name: echo
+            image: lionelmace/http-https-echo
             imagePullPolicy: Always
             ports:
-            - containerPort: 80
-            - containerPort: 443
+            - containerPort: 8080
+            - containerPort: 8443
 
     ---
     apiVersion: v1
     kind: Service
     metadata:  
-    name: echo-service
-    namespace: echo
-    annotations:
-        service.kubernetes.io/ibm-load-balancer-cloud-provider-enable-features: "proxy-protocol"
+        name: echo-service
+        namespace: echo
+        annotations:
+            service.kubernetes.io/ibm-load-balancer-cloud-provider-enable-features: "proxy-protocol"
     spec:
-    type: LoadBalancer
-    selector:
-        app: echo
-    ports:  
-    - name: http
-        protocol: TCP
-        port: 80
-        targetPort: 80
+        type: LoadBalancer
+        selector:
+            app: echo
+        ports:  
+        - name: http
+          protocol: TCP
+          port: 80
+          targetPort: 8080
+        - name: https
+          protocol: TCP
+          port: 80
+          targetPort: 8443
     ```
     > The annotation **proxy-protocol** is used to preserve the source IP address of requests to apps in your cluster. This is documented [here](https://cloud.ibm.com/docs/containers?topic=containers-vpc-lbaas).
 
@@ -86,6 +91,10 @@ In HTTP or HTTPS mode (aka SSL termination at ELB), the ELB inserts X-Forwarded-
 1. Deploy this yaml in your cluster
     ```
     kubectl apply -f echo-proxy.yaml
+    ```
+    or
+    ```
+    oc apply -f echo-proxy.yaml
     ```
 
 1. A Load Balancer gets created in the VPC. Let's retrieve the hostname of this newly created LB.
@@ -106,7 +115,16 @@ In HTTP or HTTPS mode (aka SSL termination at ELB), the ELB inserts X-Forwarded-
     TargetPort:               80/TCP
     NodePort:                 http  30066/TCP
     Endpoints:                172.17.79.11:80
+    Session Affinity:         None
+    External Traffic Policy:  Cluster
+    Events:
+    Type    Reason                           Age    From                Message
+    ----    ------                           ----   ----                -------
+    Normal  EnsuringLoadBalancer             3m2s   service-controller  Ensuring load balancer
+    Normal  EnsuredLoadBalancer              2m45s  service-controller  Ensured load balancer
+    Normal  CloudVPCLoadBalancerNormalEvent  1s     ibm-cloud-provider  Event on cloud load balancer echo-service for service echo/echo-service with UID 8b13947f-17b9-4d6e-aa50-18a4200021fd: The VPC load balancer that routes requests to this Kubernetes LoadBalancer service is currently online/active.
     ```
+    > Make sure you see the message **Kubernetes LoadBalancer service is currently online/active**. You might need to wait for a couple of minutes while the VPC LB is creating. You can also check in the UI the status of the LB by opening the [VPC Infrastructure](https://cloud.ibm.com/vpc-ext/network/loadBalancers).
 
 1. Then issue a request via your browser or curl using the LoadBalancer Ingress in the output above.
 
